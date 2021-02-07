@@ -20,6 +20,7 @@ var (
 	roles      = map[string]string{
 		"🗾": "weeb",
 		"🤔": "meta",
+		"🧾": "bookworm",
 	}
 )
 
