@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	MAGIC = "💻"
+	MAGIC  = "💻"
+	MEMBER = "member"
 )
 
 var (
@@ -83,6 +84,24 @@ func main() {
 			// TODO: when magic present, register the reaction handler
 			log.Println("registering add handler")
 			ses.AddHandler(func(s *discordgo.Session, mr *discordgo.MessageReactionAdd) {
+				// guard unverified members
+				mem, err := s.GuildMember(mr.GuildID, mr.UserID)
+				if err != nil {
+					errs.Println(err)
+				}
+
+				isVerified := false
+				for _, role := range mem.Roles {
+					if strings.ToLower(role) == MEMBER {
+						isVerified = true
+					}
+				}
+
+				if !isVerified {
+					log.Printf("Unverified member %s attempted to gain %s", mr.UserID, mr.Emoji.Name)
+					return
+				}
+
 				for emoji, role := range roles {
 					if emoji == mr.Emoji.Name {
 						// assign role
@@ -97,6 +116,24 @@ func main() {
 			// register
 			log.Println("registering remove handler")
 			ses.AddHandler(func(s *discordgo.Session, mr *discordgo.MessageReactionRemove) {
+				// guard unverified members
+				mem, err := s.GuildMember(mr.GuildID, mr.UserID)
+				if err != nil {
+					errs.Println(err)
+				}
+
+				isVerified := false
+				for _, role := range mem.Roles {
+					if strings.ToLower(role) == MEMBER {
+						isVerified = true
+					}
+				}
+
+				if !isVerified {
+					log.Printf("Unverified member %s attempted to gain %s", mr.UserID, mr.Emoji.Name)
+					return
+				}
+
 				for emoji, role := range roles {
 					if emoji == mr.Emoji.Name {
 						// assign role
