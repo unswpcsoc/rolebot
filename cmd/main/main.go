@@ -90,15 +90,33 @@ func main() {
 					errs.Println(err)
 				}
 
+				groles, err := ses.GuildRoles(mr.GuildID)
+				if err != nil {
+					errs.Println(err)
+				}
+
+				memRoleID := ""
+				for _, gr := range groles {
+					if strings.ToLower(gr.Name) == MEMBER {
+						memRoleID = gr.ID
+						break
+					}
+				}
+
+				if memRoleID == "" {
+					errs.Println("Could not find role", MEMBER)
+					return
+				}
+
 				isVerified := false
-				for _, role := range mem.Roles {
-					if strings.ToLower(role) == MEMBER {
+				for _, roleID := range mem.Roles {
+					if roleID == memRoleID {
 						isVerified = true
 					}
 				}
 
 				if !isVerified {
-					log.Printf("Unverified member %s attempted to gain %s", mr.UserID, mr.Emoji.Name)
+					log.Printf("Unverified member %s attempted to gain %s - %#v", mr.UserID, mr.Emoji.Name, mem.Roles)
 					return
 				}
 
@@ -108,7 +126,9 @@ func main() {
 						err = s.GuildMemberRoleAdd(thisGuild, mr.UserID, roleIDs[role])
 						if err != nil {
 							errs.Println(err)
+							continue
 						}
+						log.Printf("Gave member %s role %s", mr.UserID, mr.Emoji.Name)
 					}
 				}
 			})
@@ -116,31 +136,15 @@ func main() {
 			// register
 			log.Println("registering remove handler")
 			ses.AddHandler(func(s *discordgo.Session, mr *discordgo.MessageReactionRemove) {
-				// guard unverified members
-				mem, err := s.GuildMember(mr.GuildID, mr.UserID)
-				if err != nil {
-					errs.Println(err)
-				}
-
-				isVerified := false
-				for _, role := range mem.Roles {
-					if strings.ToLower(role) == MEMBER {
-						isVerified = true
-					}
-				}
-
-				if !isVerified {
-					log.Printf("Unverified member %s attempted to gain %s", mr.UserID, mr.Emoji.Name)
-					return
-				}
-
 				for emoji, role := range roles {
 					if emoji == mr.Emoji.Name {
 						// assign role
 						err = s.GuildMemberRoleRemove(thisGuild, mr.UserID, roleIDs[role])
 						if err != nil {
 							errs.Println(err)
+							continue
 						}
+						log.Printf("Removed member %s role %s", mr.UserID, mr.Emoji.Name)
 					}
 				}
 			})
